@@ -25,7 +25,7 @@ impl City {
         self.index
     }
 
-    pub fn get_capacity(&self) -> u16 {
+    pub fn get_demand(&self) -> u16 {
         self.demand
     }
 }

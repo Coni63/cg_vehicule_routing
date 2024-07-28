@@ -18,20 +18,28 @@ impl<'a> Route<'a> {
         }
     }
 
+    pub fn can_accept(&self, city: &City, max_capacity: u16) -> bool {
+        self.used_capacity + city.get_demand() <= max_capacity
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cities.is_empty()
+    }
+
     pub fn add_city(&mut self, city: &City, position: usize) {
         if position >= self.cities.len() {
             self.cities.push(city.get_index());
         } else {
             self.cities.insert(position, city.get_index());
         }
-        self.used_capacity += city.get_capacity();
+        self.used_capacity += city.get_demand();
         self.updade_distance();
     }
 
     pub fn remove_city(&mut self, city: &City) {
         if let Some(index) = self.cities.iter().position(|x| *x == city.get_index()) {
             self.cities.remove(index);
-            self.used_capacity -= city.get_capacity();
+            self.used_capacity -= city.get_demand();
         }
         self.updade_distance();
     }
@@ -51,7 +59,7 @@ impl<'a> Route<'a> {
     }
 
     pub fn get_total_distance(&self) -> f32 {
-        self.total_distance
+        self.total_distance.round()
     }
 }
 
