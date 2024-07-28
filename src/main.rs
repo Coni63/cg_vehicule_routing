@@ -39,16 +39,14 @@ pub fn load_input() -> (u16, Vec<City>) {
     (capacity, cities)
 }
 
-fn get_solution(cities: &[City], distance_table: &Distance) -> Vec<Route> {
-    let mut route1 = Route::new();
+fn get_solution<'a>(cities: &[City], distance_table: &'a Distance) -> Vec<Route<'a>> {
+    let mut route1 = Route::new(distance_table);
     route1.add_city(&cities[1], 0);
     route1.add_city(&cities[2], 1);
     route1.add_city(&cities[3], 2);
-    route1.updade_distance(distance_table);
 
-    let mut route2 = Route::new();
+    let mut route2 = Route::new(distance_table);
     route2.add_city(&cities[4], 3);
-    route2.updade_distance(distance_table);
 
     vec![route1, route2]
 }
