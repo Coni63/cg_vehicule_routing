@@ -63,7 +63,7 @@ fn get_solution<'a>(
         let mut current_city = 0;
         loop {
             let mut closest_index = 255;
-            let mut closest_distance = f32::MAX;
+            let mut closest_distance = u16::MAX;
             for (i, city) in cities.iter().enumerate() {
                 let d = distance_table.get(current_city, i);
                 if !used[i] && (d < closest_distance) && route.can_accept(city, capacity) {
@@ -103,7 +103,7 @@ fn main() {
 
     let solution = get_solution(&cities, capacity, &distance_table);
 
-    let mut final_distance = 0.0;
+    let mut final_distance = 0;
     let mut final_string: Vec<String> = Vec::new();
     for route in solution.iter() {
         eprintln!("{:?}", route);

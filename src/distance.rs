@@ -3,13 +3,13 @@ use std::fmt;
 use crate::city::City;
 
 pub struct Distance {
-    dist: Vec<Vec<f32>>,
+    dist: Vec<Vec<u16>>,
 }
 
 impl Distance {
     pub fn new(cities: &[City]) -> Self {
         let n = cities.len();
-        let mut dist = vec![vec![0.0; n]; n];
+        let mut dist = vec![vec![0; n]; n];
         for (i, ci) in cities.iter().enumerate() {
             for (j, cj) in cities.iter().skip(i).enumerate() {
                 dist[i][i + j] = ci.distance(cj);
@@ -19,7 +19,7 @@ impl Distance {
         Distance { dist }
     }
 
-    pub fn get(&self, i: usize, j: usize) -> f32 {
+    pub fn get(&self, i: usize, j: usize) -> u16 {
         self.dist[i][j]
     }
 }

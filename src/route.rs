@@ -3,7 +3,7 @@ use std::fmt;
 
 pub struct Route<'a> {
     cities: Vec<usize>,
-    total_distance: f32,
+    total_distance: u16,
     used_capacity: u16,
     distances: &'a Distance,
 }
@@ -12,7 +12,7 @@ impl<'a> Route<'a> {
     pub fn new(distances: &'a Distance) -> Route {
         Route {
             cities: Vec::new(),
-            total_distance: 0.0,
+            total_distance: 0,
             used_capacity: 0,
             distances,
         }
@@ -46,7 +46,7 @@ impl<'a> Route<'a> {
 
     fn updade_distance(&mut self) {
         let n = self.cities.len() - 1;
-        self.total_distance = 0.0;
+        self.total_distance = 0;
         for i in 0..n {
             self.total_distance += self.distances.get(self.cities[i], self.cities[i + 1]);
         }
@@ -58,8 +58,8 @@ impl<'a> Route<'a> {
         self.used_capacity
     }
 
-    pub fn get_total_distance(&self) -> f32 {
-        self.total_distance.round()
+    pub fn get_total_distance(&self) -> u16 {
+        self.total_distance
     }
 }
 
