@@ -22,36 +22,67 @@ impl<'a> Route<'a> {
         self.used_capacity + city.get_demand() <= max_capacity
     }
 
+    pub fn can_swap(&self, previous_city: &City, new_city: &City, max_capacity: u16) -> bool {
+        self.used_capacity - previous_city.get_demand() + new_city.get_demand() <= max_capacity
+    }
+
     pub fn is_empty(&self) -> bool {
         self.cities.is_empty()
     }
 
     pub fn add_city(&mut self, city: &City, position: usize) {
-        if position >= self.cities.len() {
-            self.cities.push(city.get_index());
+        let new_idx = city.get_index();
+        let before_idx: usize;
+        let after_idx: usize;
+
+        if self.cities.is_empty() {
+            before_idx = 0;
+            after_idx = 0;
+            self.cities.push(new_idx);
+        } else if position >= self.cities.len() {
+            before_idx = *self.cities.last().unwrap();
+            after_idx = 0;
+            self.cities.push(new_idx);
         } else {
-            self.cities.insert(position, city.get_index());
+            before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            after_idx = *self.cities.get(position).unwrap();
+            self.cities.insert(position, new_idx);
+            eprintln!("{} {}", before_idx, after_idx);
         }
         self.used_capacity += city.get_demand();
-        self.updade_distance();
+        self.total_distance = self.total_distance - self.distances.get(before_idx, after_idx)
+            + self.distances.get(before_idx, new_idx)
+            + self.distances.get(new_idx, after_idx);
     }
 
     pub fn remove_city(&mut self, city: &City) {
-        if let Some(index) = self.cities.iter().position(|x| *x == city.get_index()) {
-            self.cities.remove(index);
+        let removed_idx = city.get_index();
+        if let Some(position) = self.cities.iter().position(|x| *x == removed_idx) {
+            let before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            let after_idx = *self.cities.get(position + 1).unwrap_or(&0);
             self.used_capacity -= city.get_demand();
+            self.total_distance = self.total_distance + self.distances.get(before_idx, after_idx)
+                - self.distances.get(before_idx, removed_idx)
+                - self.distances.get(removed_idx, after_idx);
+            self.cities.remove(position);
         }
-        self.updade_distance();
     }
 
-    fn updade_distance(&mut self) {
-        let n = self.cities.len() - 1;
-        self.total_distance = 0;
-        for i in 0..n {
-            self.total_distance += self.distances.get(self.cities[i], self.cities[i + 1]);
+    pub fn swap_city(&mut self, city_to_replace: &City, new_city: &City) {
+        let removed_idx = city_to_replace.get_index();
+        let new_idx = new_city.get_index();
+        if let Some(position) = self.cities.iter().position(|x| *x == removed_idx) {
+            let before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            let after_idx = *self.cities.get(position + 1).unwrap_or(&0);
+            self.cities[position] = new_idx;
+            self.used_capacity =
+                self.used_capacity - city_to_replace.get_demand() + new_city.get_demand();
+            self.total_distance = self.total_distance
+                + self.distances.get(before_idx, new_idx)
+                + self.distances.get(new_idx, after_idx)
+                - self.distances.get(before_idx, removed_idx)
+                - self.distances.get(removed_idx, after_idx);
         }
-        self.total_distance += self.distances.get(0, self.cities[0]);
-        self.total_distance += self.distances.get(self.cities[n], 0);
     }
 
     pub fn get_capacity(&self) -> u16 {
@@ -92,5 +123,57 @@ impl<'a> ToString for Route<'a> {
             .map(ToString::to_string)
             .collect::<Vec<String>>()
             .join(" ")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_city() {
+        let cities = vec![
+            City::new(0, 0, 0, 0),
+            City::new(1, 10, 0, 2),
+            City::new(2, 10, 10, 3),
+            City::new(3, 0, 10, 4),
+            City::new(4, 5, 5, 6),
+        ];
+
+        let distances = Distance::new(&cities);
+
+        let mut route = Route::new(&distances);
+
+        route.add_city(&cities[1], 0);
+        assert_eq!(route.cities, vec![1]);
+        assert_eq!(route.total_distance, 20);
+        assert_eq!(route.used_capacity, 2);
+
+        route.add_city(&cities[2], 1);
+        route.add_city(&cities[3], 2);
+        assert_eq!(route.cities, vec![1, 2, 3]);
+        assert_eq!(route.total_distance, 40);
+        assert_eq!(route.used_capacity, 9);
+
+        route.add_city(&cities[4], 1);
+        assert_eq!(route.cities, vec![1, 4, 2, 3]);
+        assert_eq!(route.total_distance, 44);
+        assert_eq!(route.used_capacity, 15);
+
+        route.remove_city(&cities[2]);
+        assert_eq!(route.cities, vec![1, 4, 3]);
+        assert_eq!(route.total_distance, 34);
+        assert_eq!(route.used_capacity, 12);
+
+        route.swap_city(&cities[4], &cities[2]);
+        assert_eq!(route.cities, vec![1, 2, 3]);
+        assert_eq!(route.total_distance, 40);
+        assert_eq!(route.used_capacity, 9);
+
+        route.remove_city(&cities[2]);
+        route.remove_city(&cities[3]);
+        assert_eq!(route.cities, vec![1]);
+        assert_eq!(route.total_distance, 20);
+        assert_eq!(route.used_capacity, 2);
     }
 }
