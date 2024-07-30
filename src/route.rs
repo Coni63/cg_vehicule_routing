@@ -18,16 +18,16 @@ impl<'a> Route<'a> {
         }
     }
 
+    pub fn get(&self, idx: usize) -> usize {
+        self.cities[idx]
+    }
+
     pub fn can_accept(&self, city: &City, max_capacity: u16) -> bool {
         self.used_capacity + city.get_demand() <= max_capacity
     }
 
     pub fn can_swap(&self, previous_city: &City, new_city: &City, max_capacity: u16) -> bool {
         self.used_capacity - previous_city.get_demand() + new_city.get_demand() <= max_capacity
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.cities.is_empty()
     }
 
     pub fn add_city(&mut self, city: &City, position: usize) {
@@ -44,10 +44,13 @@ impl<'a> Route<'a> {
             after_idx = 0;
             self.cities.push(new_idx);
         } else {
-            before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            before_idx = if position == 0 {
+                0
+            } else {
+                *self.cities.get(position - 1).unwrap_or(&0)
+            };
             after_idx = *self.cities.get(position).unwrap();
             self.cities.insert(position, new_idx);
-            eprintln!("{} {}", before_idx, after_idx);
         }
         self.used_capacity += city.get_demand();
         self.total_distance = self.total_distance - self.distances.get(before_idx, after_idx)
@@ -58,7 +61,11 @@ impl<'a> Route<'a> {
     pub fn remove_city(&mut self, city: &City) {
         let removed_idx = city.get_index();
         if let Some(position) = self.cities.iter().position(|x| *x == removed_idx) {
-            let before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            let before_idx = if position == 0 {
+                0
+            } else {
+                *self.cities.get(position - 1).unwrap_or(&0)
+            };
             let after_idx = *self.cities.get(position + 1).unwrap_or(&0);
             self.used_capacity -= city.get_demand();
             self.total_distance = self.total_distance + self.distances.get(before_idx, after_idx)
@@ -72,7 +79,11 @@ impl<'a> Route<'a> {
         let removed_idx = city_to_replace.get_index();
         let new_idx = new_city.get_index();
         if let Some(position) = self.cities.iter().position(|x| *x == removed_idx) {
-            let before_idx = *self.cities.get(position - 1).unwrap_or(&0);
+            let before_idx = if position == 0 {
+                0
+            } else {
+                *self.cities.get(position - 1).unwrap_or(&0)
+            };
             let after_idx = *self.cities.get(position + 1).unwrap_or(&0);
             self.cities[position] = new_idx;
             self.used_capacity =
@@ -91,6 +102,14 @@ impl<'a> Route<'a> {
 
     pub fn get_total_distance(&self) -> u16 {
         self.total_distance
+    }
+
+    pub fn len(&self) -> usize {
+        self.cities.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cities.is_empty()
     }
 }
 
