@@ -1,6 +1,5 @@
 mod city;
 mod distance;
-mod route;
 mod solution;
 mod solver;
 
@@ -52,17 +51,6 @@ fn main() {
 
     let solution = get_solution(&cities, capacity, &distance_table);
 
-    // let s: u16 = cities.iter().map(|city| city.get_demand()).sum();
-    // eprintln!("{} {} {}", capacity, s, solution.len());
-
-    let mut final_distance = 0;
-    let mut final_string: Vec<String> = Vec::new();
-    for route in solution.iter() {
-        // eprintln!("{:?}", route);
-        final_distance += route.get_total_distance();
-        final_string.push(route.to_string());
-    }
-
-    println!("{}", final_string.join(";"));
-    println!("{}", final_distance);
+    println!("{}", solution.to_string(&cities, capacity));
+    println!("{}", solution.score);
 }
