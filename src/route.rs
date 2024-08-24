@@ -96,6 +96,61 @@ impl<'a> Route<'a> {
         }
     }
 
+    pub fn inner_swap_city(&mut self, position_city_a: usize, position_city_b: usize) {
+        if position_city_a == position_city_b {
+            return;
+        }
+
+        let idx_city_a = self.cities[position_city_a];
+        let idx_city_b = self.cities[position_city_b];
+
+        let before_idx_a = if position_city_a == 0 {
+            0
+        } else {
+            *self.cities.get(position_city_a - 1).unwrap_or(&0)
+        };
+        let after_idx_a = *self.cities.get(position_city_a + 1).unwrap_or(&0);
+
+        let before_idx_b = if position_city_b == 0 {
+            0
+        } else {
+            *self.cities.get(position_city_b - 1).unwrap_or(&0)
+        };
+        let after_idx_b = *self.cities.get(position_city_b + 1).unwrap_or(&0);
+
+        self.total_distance = self.total_distance
+            - self.distances.get(before_idx_a, idx_city_a)
+            - self.distances.get(idx_city_a, after_idx_a)
+            - self.distances.get(before_idx_b, idx_city_b)
+            - self.distances.get(idx_city_b, after_idx_b);
+
+        self.cities[position_city_a] = idx_city_b;
+        self.cities[position_city_b] = idx_city_a;
+
+        // splitted becquse there is error in cqse of swap of 2 consecutives values
+        // TODO: optimize
+
+        let before_idx_a = if position_city_a == 0 {
+            0
+        } else {
+            *self.cities.get(position_city_a - 1).unwrap_or(&0)
+        };
+        let after_idx_a = *self.cities.get(position_city_a + 1).unwrap_or(&0);
+
+        let before_idx_b = if position_city_b == 0 {
+            0
+        } else {
+            *self.cities.get(position_city_b - 1).unwrap_or(&0)
+        };
+        let after_idx_b = *self.cities.get(position_city_b + 1).unwrap_or(&0);
+
+        self.total_distance = self.total_distance
+            + self.distances.get(before_idx_a, idx_city_b)
+            + self.distances.get(idx_city_b, after_idx_a)
+            + self.distances.get(before_idx_b, idx_city_a)
+            + self.distances.get(idx_city_a, after_idx_b);
+    }
+
     pub fn get_capacity(&self) -> u16 {
         self.used_capacity
     }

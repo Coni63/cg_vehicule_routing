@@ -83,6 +83,8 @@ fn evolve<'a>(base_solution: Vec<Route<'a>>, cities: &[City]) -> Vec<Route<'a>> 
     let mut rng = rand::thread_rng();
     let now = Instant::now();
 
+    eprintln!("{:?}", base_solution);
+
     let mut best_solution = base_solution.clone();
     let mut active_solution = base_solution.clone();
     let mut current_solution = base_solution.clone();
@@ -105,16 +107,14 @@ fn evolve<'a>(base_solution: Vec<Route<'a>>, cities: &[City]) -> Vec<Route<'a>> 
                 let route = current_solution.get_mut(idx_route_impacted).unwrap();
                 let idx1 = rng.gen_range(0..route.len());
                 let idx2 = rng.gen_range(0..route.len());
-                let city1 = &cities[route.get(idx1)];
-                let city2 = &cities[route.get(idx2)];
-                route.swap_city(city1, city2);
+                route.inner_swap_city(idx1, idx2);
             } // Strategy::OuterSwap => {}
               // Strategy::Transfert => {}
         }
 
         current_score = get_score(&current_solution);
         if current_score < best_score {
-            eprintln!("New Best @{}", best_score);
+            // eprintln!("New Best @{} - {:?}", best_score, current_solution);
             best_score = current_score;
             active_score = current_score;
             best_solution = current_solution.clone();
