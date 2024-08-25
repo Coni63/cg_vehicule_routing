@@ -1,10 +1,13 @@
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::{self, Debug, Formatter};
+use std::hash::{Hash, Hasher};
 
 use crate::city::City;
 
 pub struct Solution {
     pub routes: Vec<usize>,
     pub score: u32,
+    pub hashcode: u64,
 }
 
 impl Solution {
@@ -26,6 +29,11 @@ impl Solution {
 
         s
     }
+
+    pub fn calculate_hash(&mut self, hasher: &mut DefaultHasher) {
+        self.routes.hash(hasher);
+        self.hashcode = hasher.finish()
+    }
 }
 
 impl Clone for Solution {
@@ -33,6 +41,7 @@ impl Clone for Solution {
         Solution {
             routes: self.routes.clone(),
             score: self.score,
+            hashcode: self.hashcode,
         }
     }
 }

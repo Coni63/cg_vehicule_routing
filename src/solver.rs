@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
+use std::hash::DefaultHasher;
 use std::time::Instant;
 
+use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
@@ -45,6 +48,7 @@ fn get_naive_solution(cities: &[City], capacity: u16, distance_table: &Distance)
     Solution {
         routes: ans,
         score: total_distance,
+        hashcode: 0,
     }
 }
 
@@ -54,6 +58,9 @@ fn evolve(
     capacity: u16,
     distance_table: &Distance,
 ) -> Solution {
+    let mut visited_states: HashSet<u64> = HashSet::new();
+    let mut hasher = DefaultHasher::new();
+
     let mut population = vec![naive_ans];
 
     let mut rng = thread_rng();
@@ -73,8 +80,14 @@ fn evolve(
         let mut solution = Solution {
             routes: v,
             score: 0,
+            hashcode: 0,
         };
         evaluate_solution(&mut solution, cities, capacity, distance_table);
+        solution.calculate_hash(&mut hasher);
+
+        if visited_states.contains(&solution.hashcode) {
+            continue;
+        }
         population.push(solution);
     }
 
@@ -125,15 +138,29 @@ fn evolve(
             let mut solution = Solution {
                 routes: c1,
                 score: 0,
+                hashcode: 0,
             };
             evaluate_solution(&mut solution, cities, capacity, distance_table);
+            solution.calculate_hash(&mut hasher);
+
+            if visited_states.contains(&solution.hashcode) {
+                continue;
+            }
+            visited_states.insert(solution.hashcode);
             population.push(solution);
 
             let mut solution = Solution {
                 routes: c2,
                 score: 0,
+                hashcode: 0,
             };
             evaluate_solution(&mut solution, cities, capacity, distance_table);
+            solution.calculate_hash(&mut hasher);
+
+            if visited_states.contains(&solution.hashcode) {
+                continue;
+            }
+            visited_states.insert(solution.hashcode);
             population.push(solution);
         }
 
@@ -150,8 +177,10 @@ fn evolve(
                 let mut solution = Solution {
                     routes: new_route,
                     score: 0,
+                    hashcode: 0,
                 };
                 evaluate_solution(&mut solution, cities, capacity, distance_table);
+                visited_states.insert(solution.hashcode);
                 population.push(solution);
             }
         }
@@ -231,10 +260,35 @@ fn is_hole(value: &usize, parent: &[usize], a: usize, b: usize) -> bool {
     false
 }
 
+fn bruteforce_solution(cities: &[City], capacity: u16, distance_table: &Distance) -> Solution {
+    let n = cities.len();
+    let mut best_solution = Solution {
+        routes: vec![],
+        score: u32::MAX,
+        hashcode: 0,
+    };
+    for new_route in (1..n).permutations(n - 1) {
+        let mut solution = Solution {
+            routes: new_route,
+            score: 0,
+            hashcode: 0,
+        };
+        evaluate_solution(&mut solution, cities, capacity, distance_table);
+        if solution.score < best_solution.score {
+            best_solution = solution;
+        }
+    }
+
+    best_solution
+}
+
 pub fn get_solution(cities: &[City], capacity: u16, distance_table: &Distance) -> Solution {
-    let naive_ans = get_naive_solution(cities, capacity, distance_table);
-    let improved = evolve(naive_ans, cities, capacity, distance_table);
-    improved
+    if cities.len() < 10 {
+        bruteforce_solution(cities, capacity, distance_table)
+    } else {
+        let naive_ans = get_naive_solution(cities, capacity, distance_table);
+        evolve(naive_ans, cities, capacity, distance_table)
+    }
 }
 
 #[cfg(test)]
