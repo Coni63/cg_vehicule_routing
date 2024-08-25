@@ -62,6 +62,7 @@ fn evolve(
     // let crossover_rate = 0.8;
     let mutation_rate = 0.02;
     let allele_length = cities.len() - 1;
+    let duration_ms = 9590;
 
     let start_time = Instant::now();
 
@@ -83,11 +84,11 @@ fn evolve(
     );
 
     let mut generation = 0;
-    while generation < 1000 {
+    while start_time.elapsed().as_millis() < duration_ms {
         // selection
         population.sort_by(|sol_a, sol_b| sol_a.score.cmp(&sol_b.score));
 
-        eprintln!("Best @{}: {}", generation, &population[0].score);
+        // eprintln!("Best @{}: {}", generation, &population[0].score);
 
         population.truncate(selected_population);
 
@@ -159,8 +160,9 @@ fn evolve(
     }
 
     eprintln!(
-        "Ending evolution after {} ms",
-        start_time.elapsed().as_millis()
+        "Ending evolution after {} ms ({} generations)",
+        start_time.elapsed().as_millis(),
+        generation
     );
 
     population.sort_by(|sol_a, sol_b| sol_a.score.cmp(&sol_b.score));
