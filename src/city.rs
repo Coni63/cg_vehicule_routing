@@ -15,10 +15,10 @@ impl City {
         }
     }
 
-    pub fn distance(&self, other: &City) -> u16 {
+    pub fn distance(&self, other: &City) -> u32 {
         let dx = self.x as f32 - other.x as f32;
         let dy = self.y as f32 - other.y as f32;
-        (dx * dx + dy * dy).sqrt().round() as u16
+        (dx * dx + dy * dy).sqrt().round() as u32
     }
 
     pub fn get_index(&self) -> usize {

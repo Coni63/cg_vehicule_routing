@@ -1,8 +1,10 @@
+use std::fmt::{self, Debug, Formatter};
+
 use crate::city::City;
 
 pub struct Solution {
     pub routes: Vec<usize>,
-    pub score: u16,
+    pub score: u32,
 }
 
 impl Solution {
@@ -32,5 +34,19 @@ impl Clone for Solution {
             routes: self.routes.clone(),
             score: self.score,
         }
+    }
+}
+
+impl Debug for Solution {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "Solution {{ routes: [")?;
+        for (i, route) in self.routes.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{:?}", route)?;
+        }
+        write!(f, "], score: {} }}", self.score)?;
+        Ok(())
     }
 }

@@ -1,7 +1,8 @@
+use std::cmp::Ordering;
 use std::time::Instant;
 
-use rand::rngs::ThreadRng;
-use rand::Rng;
+use rand::seq::SliceRandom;
+use rand::{thread_rng, Rng};
 
 use crate::city::City;
 use crate::distance::Distance;
@@ -9,7 +10,7 @@ use crate::solution::Solution;
 
 fn get_naive_solution(cities: &[City], capacity: u16, distance_table: &Distance) -> Solution {
     let mut ans: Vec<usize> = Vec::new();
-    let mut total_distance: u16 = 0;
+    let mut total_distance: u32 = 0;
 
     let mut used = [false; 200];
     used[0] = true;
@@ -18,7 +19,7 @@ fn get_naive_solution(cities: &[City], capacity: u16, distance_table: &Distance)
     let mut remaining_capacity = capacity;
     while ans.len() < cities.len() - 1 {
         let mut closest_index = 255;
-        let mut closest_distance = u16::MAX;
+        let mut closest_distance = u32::MAX;
         for (i, city) in cities.iter().enumerate() {
             let d = distance_table.get(current_city, i);
             if !used[i] && (d < closest_distance) && remaining_capacity >= city.get_demand() {
@@ -48,37 +49,146 @@ fn get_naive_solution(cities: &[City], capacity: u16, distance_table: &Distance)
 }
 
 fn evolve(
-    initial_solution: &Solution,
+    naive_ans: Solution,
     cities: &[City],
     capacity: u16,
     distance_table: &Distance,
 ) -> Solution {
-    initial_solution.clone()
+    let mut population = vec![naive_ans];
+
+    let mut rng = thread_rng();
+    let max_population = 400;
+    let selected_population = 200;
+    // let crossover_rate = 0.8;
+    let mutation_rate = 0.02;
+    let allele_length = cities.len() - 1;
+
+    let start_time = Instant::now();
+
+    for _ in 1..max_population {
+        let mut v: Vec<usize> = (1..cities.len()).collect();
+        v.shuffle(&mut rng);
+
+        let mut solution = Solution {
+            routes: v,
+            score: 0,
+        };
+        evaluate_solution(&mut solution, cities, capacity, distance_table);
+        population.push(solution);
+    }
+
+    eprintln!(
+        "Starting evolution after {} ms",
+        start_time.elapsed().as_millis()
+    );
+
+    let mut generation = 0;
+    while generation < 1000 {
+        // selection
+        population.sort_by(|sol_a, sol_b| sol_a.score.cmp(&sol_b.score));
+
+        eprintln!("Best @{}: {}", generation, &population[0].score);
+
+        population.truncate(selected_population);
+
+        // crossover
+        while population.len() < max_population {
+            let parent1 = rng.gen_range(0..selected_population);
+            let parent2 = rng.gen_range(0..selected_population);
+            if parent1 == parent2 {
+                continue;
+            }
+
+            let mut start = rng.gen_range(0..allele_length);
+            let mut stop = rng.gen_range(0..allele_length);
+
+            match start.cmp(&stop) {
+                Ordering::Greater => std::mem::swap(&mut start, &mut stop),
+                Ordering::Less => (),
+                Ordering::Equal => continue,
+            }
+
+            let c1 = order_crossover(
+                &population[parent1].routes,
+                &population[parent2].routes,
+                start,
+                stop,
+            );
+            let c2 = order_crossover(
+                &population[parent2].routes,
+                &population[parent1].routes,
+                start,
+                stop,
+            );
+
+            let mut solution = Solution {
+                routes: c1,
+                score: 0,
+            };
+            evaluate_solution(&mut solution, cities, capacity, distance_table);
+            population.push(solution);
+
+            let mut solution = Solution {
+                routes: c2,
+                score: 0,
+            };
+            evaluate_solution(&mut solution, cities, capacity, distance_table);
+            population.push(solution);
+        }
+
+        // mutation
+        for i in 0..selected_population {
+            let random_float: f64 = rng.gen();
+            if random_float < mutation_rate {
+                let a = rng.gen_range(0..allele_length);
+                let b = rng.gen_range(0..allele_length);
+
+                let mut new_route = population[i].routes.clone();
+                new_route.swap(a, b);
+
+                let mut solution = Solution {
+                    routes: new_route,
+                    score: 0,
+                };
+                evaluate_solution(&mut solution, cities, capacity, distance_table);
+                population.push(solution);
+            }
+        }
+
+        generation += 1;
+    }
+
+    eprintln!(
+        "Ending evolution after {} ms",
+        start_time.elapsed().as_millis()
+    );
+
+    population.sort_by(|sol_a, sol_b| sol_a.score.cmp(&sol_b.score));
+
+    population.first().unwrap().to_owned()
 }
 
 fn evaluate_solution(
-    solution: &Solution,
+    solution: &mut Solution,
     cities: &[City],
     capacity: u16,
     distance_table: &Distance,
-) -> u16 {
-    let mut total_distance = 0u16;
+) {
+    solution.score = 0;
     let mut current_city: usize = 0;
     let mut remaining_capacity = capacity;
     for city_id in solution.routes.iter() {
         if remaining_capacity >= cities[*city_id].get_demand() {
-            total_distance += distance_table.get(current_city, *city_id);
+            solution.score += distance_table.get(current_city, *city_id);
             current_city = *city_id;
             remaining_capacity -= cities[*city_id].get_demand();
         } else {
-            total_distance += distance_table.get(current_city, 0) + distance_table.get(0, *city_id);
+            solution.score += distance_table.get(current_city, 0) + distance_table.get(0, *city_id);
             remaining_capacity = capacity - cities[*city_id].get_demand();
             current_city = *city_id;
         }
     }
-    total_distance += distance_table.get(current_city, 0);
-
-    total_distance
+    solution.score += distance_table.get(current_city, 0);
 }
 
 fn order_crossover(parent1: &[usize], parent2: &[usize], a: usize, b: usize) -> Vec<usize> {
@@ -121,7 +231,7 @@ fn is_hole(value: &usize, parent: &[usize], a: usize, b: usize) -> bool {
 
 pub fn get_solution(cities: &[City], capacity: u16, distance_table: &Distance) -> Solution {
     let naive_ans = get_naive_solution(cities, capacity, distance_table);
-    let improved = evolve(&naive_ans, cities, capacity, distance_table);
+    let improved = evolve(naive_ans, cities, capacity, distance_table);
     improved
 }
 

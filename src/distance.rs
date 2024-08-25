@@ -3,7 +3,7 @@ use std::fmt;
 use crate::city::City;
 
 pub struct Distance {
-    dist: Vec<Vec<u16>>,
+    dist: Vec<Vec<u32>>,
 }
 
 impl Distance {
@@ -19,7 +19,7 @@ impl Distance {
         Distance { dist }
     }
 
-    pub fn get(&self, i: usize, j: usize) -> u16 {
+    pub fn get(&self, i: usize, j: usize) -> u32 {
         self.dist[i][j]
     }
 }
